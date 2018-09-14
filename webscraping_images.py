@@ -5,8 +5,11 @@ from selenium import webdriver
 import time
 
 url = "https://www.hentai-foundry.com/"
+start = 0
+stop = 1
 
 driver = webdriver.Firefox()
+
 driver.get(url)
 
 driver.find_element_by_id("frontPage").click()
@@ -28,26 +31,45 @@ more = filter(find_more, more)
 tuple(more)[0].click()
 
 def get_images(driver):
+	global count
+	
 	num_links = len(driver.find_elements_by_class_name("thumbLink"))
-	output = []
 	
 	for n in range(num_links):
-		i = driver.find_elements_by_class_name("thumbLink")[n]
+		try:
+			i = driver.find_elements_by_class_name("thumbLink")[n]
+		except IndexError:
+			time.sleep(.5)
+			i = driver.find_elements_by_class_name("thumbLink")[n]
+			print(i)
+		
 		i.click()
 		image = driver.find_element_by_class_name("center")
-		output.append(image.get_attribute("src"))
-		time.sleep(.3)
+		pic = requests.get(image.get_attribute("src")).content
+
+		try:
+			with open(f"webscraped_image_{count}.png", "wb+") as file:
+				file.write(pic)
+		except Exception as e:
+			print(e)
+			print(f"could not save: page {count // 25} number {count % 25}")
+	
+		count += 1
+		time.sleep(.25)
 		driver.back()
 
-	return output
-	
+goto = driver.find_element_by_link_text(f"{start + 1}")
+goto.click()
 
-image_srcs = get_images(driver)
-print(image_srcs)
+count = start * 25
+get_images(driver)
+next = driver.find_element_by_class_name("next")
+while next and count // 25 < stop:
+	try:
+		next.click()
+		get_images(driver)
+		next = driver.find_element_by_class_name("next")
+	except:
+		print(f"stutter: page {count // 25} number {count % 25}")
 
-for num, src in enumerate(image_srcs):
-	image = requests.get(src).content
-	with open(f"webscraped_image_{num}.png", "wb+") as file:
-		file.write(image)
-
-#driver.close()
+driver.close()
