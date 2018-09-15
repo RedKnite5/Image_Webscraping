@@ -73,3 +73,4 @@ while next and count // 25 < stop:
 		print(f"stutter: page {count // 25} number {count % 25}")
 
 driver.close()
+print("Complete")
